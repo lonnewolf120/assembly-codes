@@ -1,0 +1,88 @@
+.MODEL SMALL
+.STACK 100H
+.DATA
+.CODE
+
+MSG1 DB 'ENTER STRING:$'      ; MESSAGE TO PROMPT USER INPUT
+MSG2 DB 'REVERSE STRING:$'     ; MESSAGE TO DISPLAY REVERSED STRING
+COUNT DW 0                     ; COUNTER FOR CHARACTERS
+
+MAIN PROC
+
+    MOV AX,@DATA              ; INITIALIZE DATA SEGMENT
+    MOV DS,AX
+    LEA DX,MSG1               ; LOAD ADDRESS OF MSG1 INTO DX
+    MOV AH,9                  ; DOS FUNCTION TO DISPLAY STRING
+    INT 21H                   ; CALL DOS INTERRUPT
+
+    XOR CX,CX                 ; CLEAR CX (CHARACTER COUNT)
+    MOV AH,1                  ; DOS FUNCTION TO READ CHARACTER
+    INT 21H                   ; CALL DOS INTERRUPT
+
+INPUT:
+    CMP AL,0DH                ; CHECK IF ENTER KEY (CARRIAGE RETURN) IS PRESSED
+    JE END_INPUT              ; JUMP IF ENTER KEY IS PRESSED
+    PUSH AX                   ; STORE CHARACTER ON STACK
+    INC CX                    ; INCREMENT CHARACTER COUNT
+    INT 21H                   ; READ NEXT CHARACTER
+    JMP INPUT                 ; REPEAT INPUT LOOP
+
+END_INPUT:
+    MOV DX,0DH                ; CARRIAGE RETURN
+    MOV AH,2                  ; DOS FUNCTION TO OUTPUT CHARACTER
+    INT 21H                   ; CALL DOS INTERRUPT
+
+    MOV DX,0AH                ; NEW LINE
+    MOV AH,2
+    INT 21H
+
+    MOV BX,50H               ; SET BX TO 50H
+    XCHG BX,SP               ; SWAP VALUES OF BX AND SP
+    PUSH 0020H               ; PUSH SPACE ONTO STACK
+    XCHG BX,SP               ; SWAP BACK
+
+    INC COUNT                ; INITIALIZE COUNT
+
+LOOP1:
+    POP DX                   ; POP CHARACTER FROM STACK INTO DX
+    XCHG BX,SP               ; SWAP STACK POINTER BACK
+    PUSH DX                  ; PUSH CHARACTER ONTO NEW STACK
+    XCHG BX,SP               ; SWAP AGAIN
+    INC COUNT                ; INCREMENT COUNT
+
+    LOOP LOOP1               ; LOOP UNTIL CX IS ZERO
+
+    LEA DX, MSG2             ; LOAD ADDRESS OF MSG2 INTO DX
+    MOV AH,9                 ; DOS FUNCTION TO DISPLAY STRING
+    INT 21H                  ; CALL DOS INTERRUPT
+
+    MOV CX,COUNT             ; LOAD COUNT INTO CX
+    MOV COUNT,0              ; RESET COUNT TO 0
+    PUSH 0020H               ; PUSH SPACE ONTO STACK
+    INC COUNT                ; INCREMENT COUNT
+
+REVERSE:
+    XCHG BX, SP              ; SWAP BX AND SP
+    POP DX                   ; POP CHARACTER FROM STACK INTO DX
+    XCHG BX, SP              ; SWAP BACK
+    CMP DL, 20H              ; CHECK IF CHARACTER IS SPACE
+    JNE SKIP                 ; JUMP IF NOT SPACE
+    MOV AH, 2                ; DOS FUNCTION TO OUTPUT CHARACTER
+
+LOOP2:
+    POP DX                   ; POP CHARACTER AND SHOW OUTPUT
+    INT 21H                  ; CALL DOS INTERRUPT
+    DEC COUNT                ; DECREMENT COUNT
+    JNZ LOOP2                ; LOOP IF COUNT IS NOT ZERO
+    MOV DX, 0020H            ; LOAD SPACE INTO DX
+
+SKIP:
+    PUSH DX                  ; PUSH CHARACTER BACK ONTO STACK
+    INC COUNT                ; INCREMENT COUNT
+
+    LOOP REVERSE             ; LOOP UNTIL CX IS ZERO
+    MOV AH, 4CH              ; DOS FUNCTION TO TERMINATE PROGRAM
+    INT 21H                  ; CALL DOS INTERRUPT
+
+MAIN ENDP
+END MAIN

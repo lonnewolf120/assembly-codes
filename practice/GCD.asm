@@ -1,0 +1,66 @@
+.MODEL SMALL
+.STACK 100H
+.DATA
+MSG1 DB 'ENTER M=$'       ; MESSAGE TO PROMPT M
+MSG2 DB 10,13,'ENTER N=$' ; MESSAGE TO PROMPT N
+MSG3 DB 10,13,'GCD IS=$'  ; MESSAGE TO DISPLAY GCD
+A DW ?                    ; VARIABLE TO TEMPORARILY STORE VALUE
+B DW ?                    ; VARIABLE TO STORE DIVISOR
+.CODE
+
+MAIN PROC
+    MOV AX,@DATA          ; INITIALIZE DATA SEGMENT
+    MOV DS,AX
+    LEA DX,MSG1           ; LOAD ADDRESS OF MSG1 INTO DX
+    MOV AH,9              ; DOS FUNCTION TO DISPLAY STRING
+    INT 21H               ; CALL DOS INTERRUPT
+
+    CALL INDEC            ; INPUT M
+    PUSH AX               ; SAVE M ON STACK
+
+    LEA DX,MSG2           ; LOAD ADDRESS OF MSG2 INTO DX
+    MOV AH,9              ; DOS FUNCTION TO DISPLAY STRING
+    INT 21H               ; CALL DOS INTERRUPT
+
+    CALL INDEC            ; INPUT N
+    PUSH AX               ; SAVE N ON STACK
+
+    XOR BX,BX             ; CLEAR BX
+    POP BX                ; POP N INTO BX
+    POP AX                ; POP M INTO AX
+
+    CMP AX,BX             ; COMPARE M AND N
+    JL SWAP               ; IF M < N, SWAP THEM
+    JMP GCD               ; OTHERWISE, START GCD CALCULATION
+
+SWAP:
+    MOV A,AX              ; STORE AX IN A
+    MOV AX,BX             ; MOVE BX TO AX
+    MOV BX,A              ; MOVE A (ORIGINAL AX) TO BX
+
+GCD:
+    XOR DX,DX             ; CLEAR DX FOR REMAINDER
+    MOV B,BX              ; STORE DIVISOR IN B
+    DIV B                 ; DIVIDE AX BY BX
+
+    CMP DX,0              ; CHECK IF REMAINDER IS ZERO
+    JE GO                 ; IF ZERO, GCD FOUND
+    MOV AX,BX             ; REPLACE DIVIDEND WITH DIVISOR
+    MOV BX,DX             ; REPLACE DIVISOR WITH REMAINDER
+    JMP GCD               ; REPEAT GCD CALCULATION
+
+GO:
+    LEA DX,MSG3           ; LOAD ADDRESS OF MSG3 INTO DX
+    MOV AH,9              ; DOS FUNCTION TO DISPLAY STRING
+    INT 21H               ; CALL DOS INTERRUPT
+    MOV AX,B              ; MOVE GCD INTO AX
+    CALL OUTDEC           ; PRINT GCD
+
+    MOV AH,4CH            ; DOS FUNCTION TO TERMINATE PROGRAM
+    INT 21H               ; CALL DOS INTERRUPT
+
+MAIN ENDP
+INCLUDE OUTDEC.ASM        ; INCLUDE OUTDEC PROCEDURE
+INCLUDE INDEC.ASM         ; INCLUDE INDEC PROCEDURE
+
+END MAIN
